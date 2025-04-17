@@ -1,0 +1,23 @@
+package com.jbtech.collab.model;
+
+import jakarta.persistence.Entity;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Task extends BaseModel {
+    private String title;
+    private String description;
+    private LocalDate dueDate;
+
+    private Long projectId;
+    private Long creatorId;
+
+    private boolean completed;
+}

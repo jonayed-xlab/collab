@@ -1,0 +1,81 @@
+package com.jbtech.collab.service.impl;
+
+import com.jbtech.collab.dto.request.CreateTaskRequest;
+import com.jbtech.collab.exception.ApiException;
+import com.jbtech.collab.model.Project;
+import com.jbtech.collab.model.Task;
+import com.jbtech.collab.model.User;
+import com.jbtech.collab.model.UserTaskMapping;
+import com.jbtech.collab.repository.ProjectRepository;
+import com.jbtech.collab.repository.TaskRepository;
+import com.jbtech.collab.repository.UserRepository;
+import com.jbtech.collab.repository.UserTaskMappingRepository;
+import com.jbtech.collab.service.ITaskService;
+import com.jbtech.collab.utils.UserTaskRole;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class TaskService implements ITaskService {
+
+    private final TaskRepository taskRepo;
+    private final UserRepository userRepo;
+    private final ProjectRepository projectRepo;
+    private final UserTaskMappingRepository userTaskMappingRepo;
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public Task create(Task request) {
+
+        Project project = projectRepo.findById(request.getProjectId())
+                .orElseThrow(() -> new ApiException("E404", "Project not found"));
+        User creator = userRepo.findById(request.getCreatorId())
+                .orElseThrow(() -> new ApiException("E404", "User not found"));
+        User assignee = userRepo.findById(request.getAssigneeId())
+                .orElseThrow(() -> new ApiException("E404", "Assignee User not found"));
+
+        UserTaskMapping userTaskMapping = new UserTaskMapping();
+        userTaskMapping.setTaskId(request.getId());
+        userTaskMapping.setUserId(assignee.getId());
+        userTaskMapping.setRole(UserTaskRole.ASSIGNEE);
+
+        userTaskMappingRepo.save(userTaskMapping);
+        return taskRepo.save(request);
+    }
+
+
+    @Override
+    public Task get(Long id) {
+        return taskRepo.findById(id)
+                .orElseThrow(() -> new ApiException("E404", "Task not found"));
+    }
+
+    @Override
+    public List<Task> getAll() {
+        return taskRepo.findAll();
+    }
+
+    @Override
+    public List<Task> getByProject(Long projectId) {
+        return taskRepo.findByProjectId(projectId);
+    }
+
+    @Override
+    public Task update(Long id, Task task) {
+        Task existing = get(id);
+        existing.setTitle(task.getTitle());
+        existing.setDescription(task.getDescription());
+        existing.setDueDate(task.getDueDate());
+        existing.setCompleted(task.isCompleted());
+        return taskRepo.save(existing);
+    }
+
+    @Override
+    public void delete(Long id) {
+        taskRepo.deleteById(id);
+    }
+}

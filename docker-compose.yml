@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   app:                          # Your Spring Boot service
-    build: .                    # Build using the Dockerfile in current dir
+    build: collab-image
     restart: always
     ports:
       - "3333:8080"

@@ -1,0 +1,14 @@
+# Build the application
+./mvnw clean package     # Or ./gradlew build
+
+# Build the application skip tests
+mvn clean package -DskipTests
+
+# Build the image
+docker build -t collab-image .
+
+# Sharing the image
+docker save -o collab-image.tar collab-image
+
+# Loading the image
+docker load -i collab-image.tar

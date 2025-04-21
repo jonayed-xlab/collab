@@ -1,3 +1,6 @@
+server:
+  port: 3300
+
 app:
   base:
     url: /api/v1

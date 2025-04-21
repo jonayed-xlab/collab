@@ -18,10 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -212,8 +209,28 @@ public class WorkPackageService extends BaseService implements IWorkPackageServi
     }
 
     @Override
-    public List<WorkPackage> getProjectWorkPackages(Long projectId) {
-        return wpRepository.findByProjectId(projectId);
+    public List<WorkPackageResponseWrapper> getProjectWorkPackages(Long projectId) {
+
+        List<WorkPackage> storyWorkPackages = wpRepository.findByProjectIdAndWorkPackageType(projectId, WorkPackageEnum.STORY);
+
+        if (storyWorkPackages.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return storyWorkPackages.stream().map(currentWorkPackage -> {
+            List<WorkPackageDynamicMapping> childMappings = wpdmRepository.findByParentWorkPackageId(currentWorkPackage.getId());
+
+            List<WorkPackage> childWorkPackages = childMappings.stream()
+                    .map(mapping -> wpRepository.findById(mapping.getChildWorkPackageId()).orElse(null))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            return WorkPackageResponseWrapper.builder()
+                    .workPackage(currentWorkPackage)
+                    .relatedWorkPackages(null)
+                    .childWorkPackages(childWorkPackages)
+                    .build();
+        }).collect(Collectors.toList());
     }
 
     @Override

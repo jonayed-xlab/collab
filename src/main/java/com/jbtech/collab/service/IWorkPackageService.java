@@ -14,8 +14,8 @@ public interface IWorkPackageService {
     List<WorkPackage> getAll();
     WorkPackage update(Long id, WorkPackageRequest request);
     void delete(Long id);
-    List<WorkPackage> getProjectWorkPackages(Long projectId);
-    List<RoadMapResponse> getRoadmap(Long projectId);
+    List<WorkPackageResponseWrapper> getProjectWorkPackages(Long projectId);
     List<WorkPackage> getProjectWorkPackagesByUser(Long userId);
+    List<RoadMapResponse> getRoadmap(Long projectId);
     WorkPackageDashboardResponse getWorkPackageStats(Long projectId);
 }

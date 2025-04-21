@@ -55,7 +55,7 @@ public class WorkPackageResource {
     }
 
     @GetMapping("/{projectId}/project")
-    public ApiResponse<List<WorkPackage>> getWorkPackages(@PathVariable Long projectId) {
+    public ApiResponse<List<WorkPackageResponseWrapper>> getWorkPackages(@PathVariable Long projectId) {
         return ApiResponse.success(
                 workPackageService.getProjectWorkPackages(projectId)
         );

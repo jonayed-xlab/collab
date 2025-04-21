@@ -1,5 +1,7 @@
 package com.jbtech.collab.resource;
 
+import com.jbtech.collab.dto.request.ChangePasswordRequest;
+import com.jbtech.collab.dto.request.UserRequest;
 import com.jbtech.collab.dto.response.ApiResponse;
 import com.jbtech.collab.model.User;
 import com.jbtech.collab.service.IUserService;
@@ -16,8 +18,8 @@ public class UserResource extends BaseResource {
     private final IUserService userService;
 
     @PostMapping
-    public ApiResponse<User> create(@RequestBody User user) {
-        userService.create(user);
+    public ApiResponse<User> create(@RequestBody UserRequest request) {
+        userService.create(request);
         return ApiResponse.success(null);
     }
 
@@ -45,6 +47,13 @@ public class UserResource extends BaseResource {
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         userService.delete(id);
+        return ApiResponse.success(null);
+    }
+
+
+    @PostMapping("/change-password")
+    public ApiResponse<Void> changePassword(@RequestBody ChangePasswordRequest request) {
+        userService.changePassword(request);
         return ApiResponse.success(null);
     }
 }

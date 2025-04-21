@@ -8,14 +8,10 @@ import lombok.experimental.SuperBuilder;
 
 @Entity
 @Data
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public class ActivityLog extends BaseModel {
-    private String entityType;
-    private Long entityId;
-    private String entityName;
-    private String fieldName;
-    private String oldValue;
-    private String newValue;
+public class Wiki extends BaseModel {
+    private String title;
+    private String description;
 }

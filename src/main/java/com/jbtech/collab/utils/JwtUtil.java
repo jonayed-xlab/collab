@@ -45,14 +45,14 @@ public class JwtUtil {
                 .getSubject();
     }
 
-    public String getUserNameFromToken(String token) {
+    public User getUserFromToken(String token) {
         String email = getEmailFromToken(token);
         if (email != null && email.contains("@")) {
-            User user = userRepo.findByEmail(email)
+            return userRepo.findByEmail(email)
                     .orElseThrow(() -> new ApiException("E404", "User not found"));
-            return user.getName();
+
         }
-        return email;
+        return null;
     }
 
     public boolean validateToken(String token) {

@@ -3,6 +3,8 @@ package com.jbtech.collab.resource;
 
 import com.jbtech.collab.dto.request.WorkPackageRequest;
 import com.jbtech.collab.dto.response.ApiResponse;
+import com.jbtech.collab.dto.response.RoadMapResponse;
+import com.jbtech.collab.dto.response.WorkPackageDashboardResponse;
 import com.jbtech.collab.dto.response.WorkPackageResponseWrapper;
 import com.jbtech.collab.model.WorkPackage;
 import com.jbtech.collab.service.IWorkPackageService;
@@ -52,8 +54,30 @@ public class WorkPackageResource {
         return ApiResponse.success(null);
     }
 
-    @GetMapping("/{projectId}/packages")
+    @GetMapping("/{projectId}/project")
     public ApiResponse<List<WorkPackage>> getWorkPackages(@PathVariable Long projectId) {
-        return ApiResponse.success(workPackageService.getProjectWorkPackages(projectId));
+        return ApiResponse.success(
+                workPackageService.getProjectWorkPackages(projectId)
+        );
+    }
+
+    @GetMapping("/{userId}/user")
+    public ApiResponse<List<WorkPackage>> getWorkPackagesByUser(@PathVariable Long userId) {
+        return ApiResponse.success(
+                workPackageService.getProjectWorkPackagesByUser(userId)
+        );
+    }
+    @GetMapping("/roadmap/{projectId}")
+    public ApiResponse<List<RoadMapResponse>> getRoadmap(@PathVariable Long projectId) {
+        return ApiResponse.success(
+                workPackageService.getRoadmap(projectId)
+        );
+    }
+
+    @GetMapping("/dashboard/{projectId}")
+    public ApiResponse<WorkPackageDashboardResponse> getWorkPackageStats(Long projectId) {
+        return ApiResponse.success(
+                workPackageService.getWorkPackageStats(projectId)
+        );
     }
 }

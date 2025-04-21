@@ -1,17 +1,18 @@
 package com.jbtech.collab.service.impl;
 
 import com.jbtech.collab.dto.request.WorkPackageRequest;
-import com.jbtech.collab.dto.response.WorkPackageResponseWrapper;
+import com.jbtech.collab.dto.response.*;
 import com.jbtech.collab.exception.ApiException;
+import com.jbtech.collab.model.User;
 import com.jbtech.collab.model.WorkPackage;
 import com.jbtech.collab.model.WorkPackageDynamicMapping;
 import com.jbtech.collab.repository.ProjectRepository;
+import com.jbtech.collab.repository.UserRepository;
 import com.jbtech.collab.repository.WorkPackageDynamicMappingRepository;
 import com.jbtech.collab.repository.WorkPackageRepository;
 import com.jbtech.collab.service.BaseService;
 import com.jbtech.collab.service.IWorkPackageService;
-import com.jbtech.collab.utils.AuditLogger;
-import com.jbtech.collab.utils.JwtUtil;
+import com.jbtech.collab.utils.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,19 +20,22 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
 public class WorkPackageService extends BaseService implements IWorkPackageService {
 
+    private final UserRepository userRepo;
     private final WorkPackageRepository wpRepository;
     private final WorkPackageDynamicMappingRepository wpdmRepository;
     private final ProjectRepository projectRepository;
     private final AuditLogger auditLogger;
 
-    public WorkPackageService(JwtUtil jwtUtil, WorkPackageRepository wpRepository, WorkPackageDynamicMappingRepository wpdmRepository, ProjectRepository projectRepository, AuditLogger auditLogger) {
+    public WorkPackageService(JwtUtil jwtUtil, UserRepository userRepo, WorkPackageRepository wpRepository, WorkPackageDynamicMappingRepository wpdmRepository, ProjectRepository projectRepository, AuditLogger auditLogger) {
         super(jwtUtil);
+        this.userRepo = userRepo;
         this.wpRepository = wpRepository;
         this.wpdmRepository = wpdmRepository;
         this.projectRepository = projectRepository;
@@ -58,8 +62,8 @@ public class WorkPackageService extends BaseService implements IWorkPackageServi
                 .storyPoints(request.getStoryPoints())
                 .earnedStoryPoints(request.getEarnedStoryPoints())
                 .ProjectType(request.getProjectType())
-                .startDate(request.getStartDate())
-                .endDate(request.getEndDate())
+                .startDate(request.getStartDate().atStartOfDay())
+                .endDate(request.getEndDate().atStartOfDay())
                 .percentageComplete(request.getPercentageComplete())
                 .category(request.getCategory())
                 .taskType(request.getTaskType())
@@ -67,9 +71,9 @@ public class WorkPackageService extends BaseService implements IWorkPackageServi
                 .priority(request.getPriority())
                 .repositoryName(request.getRepositoryName())
                 .branchName(request.getBranchName())
-                .status(request.getStatus())
+                .status(StatusEnum.NEW)
                 .projectId(request.getProjectId())
-                .createdBy(getCurrentUser())
+                .createdBy(getCurrentUser().getName())
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -160,8 +164,8 @@ public class WorkPackageService extends BaseService implements IWorkPackageServi
         wp.setStoryPoints(request.getStoryPoints());
         wp.setEarnedStoryPoints(request.getEarnedStoryPoints());
         wp.setProjectType(request.getProjectType());
-        wp.setStartDate(request.getStartDate());
-        wp.setEndDate(request.getEndDate());
+        wp.setStartDate(request.getStartDate().atStartOfDay());
+        wp.setEndDate(request.getEndDate().atStartOfDay());
         wp.setPercentageComplete(request.getPercentageComplete());
         wp.setCategory(request.getCategory());
         wp.setTaskType(request.getTaskType());
@@ -179,7 +183,8 @@ public class WorkPackageService extends BaseService implements IWorkPackageServi
                 null,
                 updatedWorkPackage.getUpdatedBy(),
                 updatedWorkPackage.getWorkPackageType().getValue(),
-                updatedWorkPackage.getId()
+                updatedWorkPackage.getId(),
+                updatedWorkPackage.getTitle()
         );
 
         return updatedWorkPackage;
@@ -209,5 +214,182 @@ public class WorkPackageService extends BaseService implements IWorkPackageServi
     @Override
     public List<WorkPackage> getProjectWorkPackages(Long projectId) {
         return wpRepository.findByProjectId(projectId);
+    }
+
+    @Override
+    public List<RoadMapResponse> getRoadmap(Long projectId) {
+
+        List<WorkPackage> workPackages = wpRepository.findByProjectId(projectId);
+
+        // Group work packages by sprint/version
+        Map<String, List<WorkPackage>> sprintMap = workPackages.stream()
+                .collect(Collectors.groupingBy(WorkPackage::getVersion));
+
+        List<RoadMapResponse> roadMapResponses = new ArrayList<>();
+
+        for (Map.Entry<String, List<WorkPackage>> entry : sprintMap.entrySet()) {
+
+            String sprintName = entry.getKey();
+            List<WorkPackage> sprintWPs = entry.getValue();
+
+            int totalCount = sprintWPs.size();
+            int openCount = (int) sprintWPs.stream()
+                    .filter(wp -> wp.getStatus() != StatusEnum.CLOSED)
+                    .count();
+            int closedCount = totalCount - openCount;
+
+            int openCountPercentage = (int) ((openCount / (double) totalCount) * 100);
+            int closedCountPercentage = 100 - openCountPercentage;
+
+            int progressPercentage = (int) sprintWPs.stream()
+                    .filter(wp -> wp.getPercentageComplete() != null)
+                    .mapToInt(WorkPackage::getPercentageComplete)
+                    .average()
+                    .orElse(0);
+
+            LocalDateTime startDate = sprintWPs.stream()
+                    .filter(wp -> wp.getStartDate() != null)
+                    .map(WorkPackage::getStartDate)
+                    .min(LocalDateTime::compareTo)
+                    .orElse(null);
+
+            LocalDateTime endDate = sprintWPs.stream()
+                    .filter(wp -> wp.getEndDate() != null)
+                    .map(WorkPackage::getEndDate)
+                    .max(LocalDateTime::compareTo)
+                    .orElse(null);
+
+            roadMapResponses.add(
+                    RoadMapResponse.builder()
+                            .sprintName(sprintName)
+                            .startDate(startDate != null ? startDate.toLocalDate().toString() : null)
+                            .endDate(endDate != null ? endDate.toLocalDate().toString() : null)
+                            .progressPercentage(progressPercentage)
+                            .openCount(openCount)
+                            .openCountPercentage(openCountPercentage)
+                            .closedCount(closedCount)
+                            .closedCountPercentage(closedCountPercentage)
+                            .build()
+            );
+        }
+
+        return roadMapResponses;
+    }
+
+    @Override
+    public List<WorkPackage> getProjectWorkPackagesByUser(Long userId) {
+        return wpRepository.findByAssignedTo(userId);
+    }
+
+    @Override
+    public WorkPackageDashboardResponse getWorkPackageStats(Long projectId) {
+
+        List<WorkPackage> workPackages = wpRepository.findByProjectId(projectId);
+
+        // 1. Status Counts
+        List<StatusCount> statusCounts = workPackages.stream()
+                .collect(Collectors.groupingBy(
+                        wp -> wp.getStatus().name(),
+                        Collectors.counting()
+                ))
+                .entrySet().stream()
+                .map(entry -> {
+                    return StatusCount.builder()
+                            .status(entry.getKey())
+                            .count(entry.getValue())
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // 2. Work by User (Assigned To)
+        Map<Long, String> userMap = userRepo.findAll().stream()
+                .collect(Collectors.toMap(User::getId, User::getName));
+
+        List<UserWorkCount> userWorkCounts = workPackages.stream()
+                .filter(wp -> wp.getAssignedTo() != null)
+                .collect(Collectors.groupingBy(
+                        WorkPackage::getAssignedTo,
+                        Collectors.counting()
+                ))
+                .entrySet().stream()
+                .map(entry -> {
+                    return UserWorkCount.builder()
+                            .username(userMap.getOrDefault(entry.getKey(), "Unknown"))
+                            .count(entry.getValue())
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // 3. WorkPackageType Open/Closed Counts
+        List<WorkPackageTypeStats> workPackageTypeStats = workPackages.stream()
+                .collect(Collectors.groupingBy(
+                        WorkPackage::getWorkPackageType,
+                        Collectors.groupingBy(WorkPackage::getStatus, Collectors.counting())
+                ))
+                .entrySet().stream()
+                .map(entry -> {
+                    WorkPackageEnum type = entry.getKey();
+                    Map<StatusEnum, Long> statusMap = entry.getValue();
+
+                    Long openCount = statusMap.entrySet().stream()
+                            .filter(e -> e.getKey() != StatusEnum.CLOSED)
+                            .mapToLong(Map.Entry::getValue)
+                            .sum();
+
+                    return WorkPackageTypeStats.builder()
+                            .workPackageType(type.name())
+                            .openCount(openCount)
+                            .closeCount(statusMap.getOrDefault(StatusEnum.CLOSED, 0L))
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // 4. Category Counts
+        List<CategoryCount> categoryCounts = workPackages.stream()
+                .filter(wp -> wp.getCategory() != null)
+                .collect(Collectors.groupingBy(
+                        WorkPackage::getCategory,
+                        Collectors.counting()
+                ))
+                .entrySet().stream()
+                .map(entry -> {
+                    return CategoryCount.builder()
+                            .category(entry.getKey())
+                            .count(entry.getValue())
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // 5. Priority Stats (Open/Closed)
+        List<PriorityStats> priorityStats = workPackages.stream()
+                .filter(wp -> wp.getPriority() != null)
+                .collect(Collectors.groupingBy(
+                        WorkPackage::getPriority,
+                        Collectors.groupingBy(WorkPackage::getStatus, Collectors.counting())
+                ))
+                .entrySet().stream()
+                .map(entry -> {
+                    PriorityEnum priority = entry.getKey();
+                    Map<StatusEnum, Long> statusMap = entry.getValue();
+                    Long openCount = statusMap.entrySet().stream()
+                            .filter(e -> e.getKey() != StatusEnum.CLOSED)
+                            .mapToLong(Map.Entry::getValue)
+                            .sum();
+
+                    return PriorityStats.builder()
+                            .priority(priority.name())
+                            .openCount(openCount)
+                            .closeCount(statusMap.getOrDefault(StatusEnum.CLOSED, 0L))
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return WorkPackageDashboardResponse.builder()
+                .statusCounts(statusCounts)
+                .userWorkCounts(userWorkCounts)
+                .workPackageTypeStats(workPackageTypeStats)
+                .categoryCounts(categoryCounts)
+                .priorityStats(priorityStats)
+                .build();
     }
 }

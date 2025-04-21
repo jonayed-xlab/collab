@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface WorkPackageRepository extends JpaRepository<WorkPackage, Long> {
     List<WorkPackage> findByProjectId(Long projectId);
+    List<WorkPackage> findByAssignedTo(Long userId);
 }

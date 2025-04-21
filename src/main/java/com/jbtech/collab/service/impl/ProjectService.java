@@ -10,12 +10,14 @@ import com.jbtech.collab.repository.UserProjectRepository;
 import com.jbtech.collab.service.BaseService;
 import com.jbtech.collab.service.IProjectService;
 import com.jbtech.collab.utils.JwtUtil;
-import lombok.RequiredArgsConstructor;
+import com.jbtech.collab.utils.ProjectStatusEnum;
+import com.jbtech.collab.utils.UserRoleEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -42,6 +44,7 @@ public class ProjectService extends BaseService implements IProjectService {
         Project newProject = new Project();
         newProject.setName(request.getName());
         newProject.setDescription(request.getDescription());
+        newProject.setStatus(ProjectStatusEnum.NEW);
 
         return projectRepo.save(newProject);
     }
@@ -54,6 +57,12 @@ public class ProjectService extends BaseService implements IProjectService {
 
     @Override
     public List<Project> getAll() {
+
+        if (!Objects.equals(UserRoleEnum.PROJECT_MANAGER, getCurrentUser().getRole())
+                && !Objects.equals(UserRoleEnum.ADMIN, getCurrentUser().getRole())) {
+            throw new ApiException("E401", "Access denied");
+        }
+
         return projectRepo.findAll();
     }
 
@@ -62,6 +71,7 @@ public class ProjectService extends BaseService implements IProjectService {
         Project existing = get(id);
         existing.setName(request.getName());
         existing.setDescription(request.getDescription());
+        existing.setStatus(request.getStatus());
         return projectRepo.save(existing);
     }
 

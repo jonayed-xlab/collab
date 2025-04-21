@@ -2,6 +2,7 @@ package com.jbtech.collab.utils;
 
 import com.jbtech.collab.model.ActivityLog;
 import com.jbtech.collab.repository.ActivityLogRepository;
+import com.jbtech.collab.service.BaseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -12,12 +13,16 @@ import java.util.List;
 import java.util.Objects;
 
 @Component
-@RequiredArgsConstructor
-public class AuditLogger {
+public class AuditLogger extends BaseService {
 
     private final ActivityLogRepository activityLogRepo;
 
-    public void logChanges(Object oldObj, Object newObj, String createdBy, String updatedBy, String entityType, Long entityId) {
+    public AuditLogger(JwtUtil jwtUtil, ActivityLogRepository activityLogRepo) {
+        super(jwtUtil);
+        this.activityLogRepo = activityLogRepo;
+    }
+
+    public void logChanges(Object oldObj, Object newObj, String createdBy, String updatedBy, String entityType, Long entityId, String entityName) {
 
         List<ActivityLog> logs = new ArrayList<>();
 
@@ -37,6 +42,7 @@ public class AuditLogger {
 
                     log.setEntityId(entityId);
                     log.setEntityType(entityType);
+                    log.setEntityName(entityName);
                     log.setCreatedBy(createdBy);
                     log.setCreatedAt(LocalDateTime.now());
                     log.setFieldName(field.getName());

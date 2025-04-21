@@ -1,5 +1,6 @@
 package com.jbtech.collab.resource;
 
+import com.jbtech.collab.dto.response.ActivityLogResponse;
 import com.jbtech.collab.dto.response.ApiResponse;
 import com.jbtech.collab.model.ActivityLog;
 import com.jbtech.collab.service.IAuditLogService;
@@ -24,6 +25,12 @@ public class AuditLogResource {
             @RequestParam String entityType) {
 
         List<ActivityLog> logs = auditLogService.getLogsByEntityIdAndType(entityId, entityType);
+        return ApiResponse.success(logs);
+    }
+
+    @GetMapping("/all")
+    public ApiResponse<List<ActivityLogResponse>> getAllLogs() {
+        List<ActivityLogResponse> logs = auditLogService.getAllLogs();
         return ApiResponse.success(logs);
     }
 }

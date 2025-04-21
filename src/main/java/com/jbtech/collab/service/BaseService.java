@@ -1,12 +1,14 @@
 package com.jbtech.collab.service;
 
 import com.jbtech.collab.exception.ApiException;
+import com.jbtech.collab.model.User;
 import com.jbtech.collab.utils.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -38,7 +40,7 @@ public class BaseService {
         return Optional.empty();
     }
 
-    public String getCurrentUser() {
+    public User getCurrentUser() {
 
         String token = getCurrentUserContextHeaderValue();
 
@@ -50,7 +52,7 @@ public class BaseService {
         String jwt = token.substring(7);
 
         if (jwtUtil.validateToken(jwt)) {
-            return jwtUtil.getUserNameFromToken(jwt);
+            return jwtUtil.getUserFromToken(jwt);
         }
 
         throw new ApiException("E401", "Unauthorized");

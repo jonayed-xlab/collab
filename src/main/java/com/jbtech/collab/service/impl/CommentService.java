@@ -31,7 +31,7 @@ public class CommentService extends BaseService implements ICommentService {
         comment.setContent(request.getContent());
         comment.setEntityId(request.getEntityId());
         comment.setEntityType(request.getEntityType());
-        comment.setCreatedBy(getCurrentUser());
+        comment.setCreatedBy(getCurrentUser().getName());
         comment.setCreatedAt(LocalDateTime.now());
 
         return commentRepo.save(comment);
@@ -49,7 +49,7 @@ public class CommentService extends BaseService implements ICommentService {
                 .orElseThrow(() -> new ApiException("E404", "Comment not found"));
 
         comment.setContent(request.getContent());
-        comment.setUpdatedBy(getCurrentUser());
+        comment.setUpdatedBy(getCurrentUser().getName());
         comment.setUpdatedAt(LocalDateTime.now());
 
         return commentRepo.save(comment);

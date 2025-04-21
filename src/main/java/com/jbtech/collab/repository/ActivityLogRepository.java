@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> {
     List<ActivityLog> findByEntityIdAndEntityTypeOrderByUpdatedAtDesc(Long entityId, String entityType);
+    List<ActivityLog> findByCreatedBy(String createdBy);
 }

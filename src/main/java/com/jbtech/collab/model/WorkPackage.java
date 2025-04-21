@@ -1,5 +1,6 @@
 package com.jbtech.collab.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.jbtech.collab.utils.PriorityEnum;
 import com.jbtech.collab.utils.StatusEnum;
 import com.jbtech.collab.utils.WorkPackageEnum;
@@ -36,7 +37,9 @@ public class WorkPackage extends BaseModel {
     private String earnedStoryPoints;
 
     private String ProjectType;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     private LocalDateTime startDate;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     private LocalDateTime endDate;
     private Integer percentageComplete;
     private String category;

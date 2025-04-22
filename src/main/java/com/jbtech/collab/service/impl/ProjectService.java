@@ -56,14 +56,18 @@ public class ProjectService extends BaseService implements IProjectService {
     }
 
     @Override
-    public List<Project> getAll() {
+    public List<Project> getAll(String name) {
 
         if (!Objects.equals(UserRoleEnum.PROJECT_MANAGER, getCurrentUser().getRole())
                 && !Objects.equals(UserRoleEnum.ADMIN, getCurrentUser().getRole())) {
             throw new ApiException("E401", "Access denied");
         }
 
-        return projectRepo.findAll();
+        if (name == null || name.trim().isEmpty()) {
+            return projectRepo.findAll();
+        }
+
+        return projectRepo.findByNameContainingIgnoreCase(name.trim());
     }
 
     @Override

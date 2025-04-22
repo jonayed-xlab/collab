@@ -23,41 +23,56 @@ public class AuditLogger extends BaseService {
     }
 
     public void logChanges(Object oldObj, Object newObj, String createdBy, String updatedBy, String entityType, Long entityId, String entityName) {
-
         List<ActivityLog> logs = new ArrayList<>();
 
-        Field[] fields = (oldObj != null ? oldObj.getClass().getDeclaredFields() : newObj.getClass().getDeclaredFields());
+        Field[] fields = newObj.getClass().getDeclaredFields();
 
         for (Field field : fields) {
             field.setAccessible(true);
             try {
-                Object oldValue = Objects.nonNull(oldObj) ? field.get(oldObj) : null;
                 Object newValue = field.get(newObj);
 
-                if (Objects.isNull(oldValue) && Objects.isNull(newValue)) continue;
-
-                if (Objects.isNull(oldValue) || !oldValue.equals(newValue)) {
-
+                // New object (no oldObj), log creation only
+                if (oldObj == null) {
                     ActivityLog log = new ActivityLog();
-
                     log.setEntityId(entityId);
                     log.setEntityType(entityType);
                     log.setEntityName(entityName);
+                    log.setFieldName(field.getName());
+                    log.setOldValue("");
+                    log.setNewValue(newValue != null ? newValue.toString() : "");
                     log.setCreatedBy(createdBy);
                     log.setCreatedAt(LocalDateTime.now());
-                    log.setFieldName(field.getName());
-                    log.setOldValue(oldValue != null ? oldValue.toString() : "");
-                    log.setNewValue(newValue != null ? newValue.toString() : "");
-                    log.setUpdatedBy(updatedBy);
-                    log.setUpdatedAt(LocalDateTime.now());
 
                     logs.add(log);
+                } else {
+                    Object oldValue = field.get(oldObj);
+
+                    boolean isDifferent = (oldValue != null && !oldValue.equals(newValue)) ||
+                            (oldValue == null && newValue != null);
+
+                    if (isDifferent) {
+                        ActivityLog log = new ActivityLog();
+                        log.setEntityId(entityId);
+                        log.setEntityType(entityType);
+                        log.setEntityName(entityName);
+                        log.setFieldName(field.getName());
+                        log.setOldValue(oldValue != null ? oldValue.toString() : "");
+                        log.setNewValue(newValue != null ? newValue.toString() : "");
+                        log.setUpdatedBy(updatedBy);
+                        log.setUpdatedAt(LocalDateTime.now());
+
+                        logs.add(log);
+                    }
                 }
             } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("Unable to access field: " + field.getName(), e);
             }
         }
 
-        activityLogRepo.saveAll(logs);
+        if (!logs.isEmpty()) {
+            activityLogRepo.saveAll(logs);
+        }
     }
+
 }

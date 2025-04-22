@@ -1,5 +1,6 @@
 package com.jbtech.collab.service.impl;
 
+import com.jbtech.collab.dto.request.NotificationRequest;
 import com.jbtech.collab.dto.request.WorkPackageRequest;
 import com.jbtech.collab.dto.response.*;
 import com.jbtech.collab.exception.ApiException;
@@ -11,6 +12,7 @@ import com.jbtech.collab.repository.UserRepository;
 import com.jbtech.collab.repository.WorkPackageDynamicMappingRepository;
 import com.jbtech.collab.repository.WorkPackageRepository;
 import com.jbtech.collab.service.BaseService;
+import com.jbtech.collab.service.INotificationService;
 import com.jbtech.collab.service.IWorkPackageService;
 import com.jbtech.collab.utils.*;
 import org.springframework.beans.BeanUtils;
@@ -29,14 +31,16 @@ public class WorkPackageService extends BaseService implements IWorkPackageServi
     private final WorkPackageDynamicMappingRepository wpdmRepository;
     private final ProjectRepository projectRepository;
     private final AuditLogger auditLogger;
+    private final INotificationService notificationService;
 
-    public WorkPackageService(JwtUtil jwtUtil, UserRepository userRepo, WorkPackageRepository wpRepository, WorkPackageDynamicMappingRepository wpdmRepository, ProjectRepository projectRepository, AuditLogger auditLogger) {
+    public WorkPackageService(JwtUtil jwtUtil, UserRepository userRepo, WorkPackageRepository wpRepository, WorkPackageDynamicMappingRepository wpdmRepository, ProjectRepository projectRepository, AuditLogger auditLogger, INotificationService notificationService) {
         super(jwtUtil);
         this.userRepo = userRepo;
         this.wpRepository = wpRepository;
         this.wpdmRepository = wpdmRepository;
         this.projectRepository = projectRepository;
         this.auditLogger = auditLogger;
+        this.notificationService = notificationService;
     }
 
 
@@ -85,17 +89,57 @@ public class WorkPackageService extends BaseService implements IWorkPackageServi
             wdm.setChildWorkPackageType(request.getWorkPackageType());
         }
 
-        /*
         auditLogger.logChanges(null,
                 wp,
                 wp.getCreatedBy(),
                 null,
                 wp.getWorkPackageType().getValue(),
-                wp.getId()
+                wp.getId(),
+                wp.getTitle()
         );
-        */
+
+        // send notification
+        sendNotification(
+                wp,
+                Objects.isNull(wp.getAssignedTo()) ? Boolean.FALSE : Boolean.TRUE,
+                Objects.isNull(wp.getAccountableTo()) ? Boolean.FALSE : Boolean.TRUE
+        );
 
         return wp;
+    }
+
+    private void sendNotification(WorkPackage wp, Boolean isAssignedTo, Boolean isAccountableTo) {
+        List<NotificationRequest> list = new ArrayList<>();
+        if (Boolean.TRUE.equals(isAssignedTo)) {
+            list.add(
+                    NotificationRequest.builder()
+                            .userId(wp.getAssignedTo())
+                            .projectId(wp.getProjectId())
+                            .workPackageId(wp.getId())
+                            .title(wp.getTitle())
+                            .message("Assigned to you")
+                            .createdBy(wp.getCreatedBy())
+                            .build()
+            );
+        }
+        if (Boolean.TRUE.equals(isAccountableTo)) {
+            list.add(
+                    NotificationRequest.builder()
+                            .userId(wp.getAccountableTo())
+                            .projectId(wp.getProjectId())
+                            .workPackageId(wp.getId())
+                            .title(wp.getTitle())
+                            .message("Accountable to you")
+                            .createdBy(wp.getCreatedBy())
+                            .build()
+            );
+        }
+
+        if (list.isEmpty()) {
+            return;
+        }
+
+        notificationService.notifyUsers(list);
     }
 
     @Override
@@ -136,8 +180,19 @@ public class WorkPackageService extends BaseService implements IWorkPackageServi
 
     @Override
     @Transactional(readOnly = true)
-    public List<WorkPackage> getAll() {
-        return wpRepository.findAll();
+    public List<WorkPackage> getAll(String title, WorkPackageEnum workPackageType) {
+
+        if ((title == null || title.isEmpty()) && workPackageType == null) {
+            return wpRepository.findAll();
+        }
+
+        if (title != null && workPackageType != null) {
+            return wpRepository.findByTitleContainingIgnoreCaseAndWorkPackageType(title, workPackageType);
+        } else if (title != null) {
+            return wpRepository.findByTitleContainingIgnoreCase(title);
+        } else {
+            return wpRepository.findByWorkPackageType(workPackageType);
+        }
     }
 
     @Override
@@ -182,6 +237,13 @@ public class WorkPackageService extends BaseService implements IWorkPackageServi
                 updatedWorkPackage.getWorkPackageType().getValue(),
                 updatedWorkPackage.getId(),
                 updatedWorkPackage.getTitle()
+        );
+
+        // send notification
+        sendNotification(
+                updatedWorkPackage,
+                (Objects.isNull(wp.getAssignedTo()) || wp.getAssignedTo().equals(updatedWorkPackage.getAssignedTo())) ? Boolean.FALSE : Boolean.TRUE,
+                (Objects.isNull(wp.getAccountableTo()) || wp.getAccountableTo().equals(updatedWorkPackage.getAccountableTo())) ? Boolean.FALSE : Boolean.TRUE
         );
 
         return updatedWorkPackage;

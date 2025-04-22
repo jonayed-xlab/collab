@@ -31,9 +31,12 @@ public class UserResource extends BaseResource {
     }
 
     @GetMapping
-    public ApiResponse<List<User>> getAll() {
+    public ApiResponse<List<User>> getAll(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email
+    ) {
         return ApiResponse.success(
-                userService.getAll()
+                userService.getAll(name, email)
         );
     }
 

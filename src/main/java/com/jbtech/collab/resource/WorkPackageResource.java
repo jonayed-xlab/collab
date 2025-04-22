@@ -7,6 +7,7 @@ import com.jbtech.collab.dto.response.WorkPackageDashboardResponse;
 import com.jbtech.collab.dto.response.WorkPackageResponseWrapper;
 import com.jbtech.collab.model.WorkPackage;
 import com.jbtech.collab.service.IWorkPackageService;
+import com.jbtech.collab.utils.WorkPackageEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,9 +35,10 @@ public class WorkPackageResource {
     }
 
     @GetMapping
-    public ApiResponse<List<WorkPackage>> getAll() {
+    public ApiResponse<List<WorkPackage>> getAll(@RequestParam(required = false) String title,
+                                                  @RequestParam(required = false) WorkPackageEnum workPackageType) {
         return ApiResponse.success(
-                workPackageService.getAll()
+                workPackageService.getAll(title, workPackageType)
         );
     }
 
@@ -66,6 +68,7 @@ public class WorkPackageResource {
                 workPackageService.getProjectWorkPackagesByUser(userId)
         );
     }
+
     @GetMapping("/roadmap/{projectId}")
     public ApiResponse<List<RoadMapResponse>> getRoadmap(@PathVariable Long projectId) {
         return ApiResponse.success(

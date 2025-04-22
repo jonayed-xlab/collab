@@ -52,9 +52,18 @@ public class UserService extends BaseService implements IUserService {
     }
 
     @Override
-    public List<User> getAll() {
-        return userRepo.findAll();
+    public List<User> getAll(String name, String email) {
+
+        if ((name == null || name.isEmpty()) && (email == null || email.isEmpty())) {
+            return userRepo.findAll();
+        }
+
+        return userRepo.findByNameContainingIgnoreCaseAndEmailContainingIgnoreCase(
+                name != null ? name : "",
+                email != null ? email : ""
+        );
     }
+
 
     @Override
     public User update(Long id, User user) {

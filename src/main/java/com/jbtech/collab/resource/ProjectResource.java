@@ -32,9 +32,9 @@ public class ProjectResource {
     }
 
     @GetMapping
-    public ApiResponse<List<Project>> getAll() {
+    public ApiResponse<List<Project>> getAll(@RequestParam (required = false) String name) {
         return ApiResponse.success(
-                projectService.getAll()
+                projectService.getAll(name)
         );
     }
 

@@ -22,9 +22,9 @@ public class NotificationResource {
         );
     }
 
-    @GetMapping("/read")
+    @GetMapping("/all")
     public ApiResponse<List<Notification>> getReadNotifications(@RequestParam Long userId) {
-        List<Notification> read = notificationService.getReadNotifications(userId);
+        List<Notification> read = notificationService.getAllNotifications(userId);
         return ApiResponse.success(read);
     }
 

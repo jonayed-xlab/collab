@@ -9,6 +9,6 @@ public interface INotificationService {
     void notifyUser(NotificationRequest notificationRequest);
     void notifyUsers(List<NotificationRequest> notificationRequests);
     List<Notification> getUnreadNotifications(Long userId);
-    List<Notification> getReadNotifications(Long userId);
+    List<Notification> getAllNotifications(Long userId);
     void markNotificationAsRead(Long id);
 }

@@ -48,8 +48,8 @@ public class NotificationService implements INotificationService {
     }
 
     @Override
-    public List<Notification> getReadNotifications(Long userId) {
-        return notificationRepository.findByUserIdAndReadTrue(userId);
+    public List<Notification> getAllNotifications(Long userId) {
+        return notificationRepository.findByUserId(userId);
     }
 
     @Override

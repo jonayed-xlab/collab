@@ -1,6 +1,6 @@
 FROM eclipse-temurin:21-jdk-alpine
 WORKDIR /app
 VOLUME /tmp
-COPY target/*.jar app.jar
+COPY target/app.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
